@@ -66,7 +66,9 @@ note: each block must have a unique name and at least one rule.
 
 each block will be evaluated sperately, and any concept that is yielded by any rule inside a block will be local to this block, and can't be used in other blocks.
 
-after all the blocks are evaluated, they will be ranked based on the number of rules that were evaluated to true.
+after all the blocks are evaluated, if a block satsfies all its rules, then it will be selected as the result and its reasoning will be explained by the block's explaining facility.
+
+if none of the blocks satsfies all its rules, then the block that satsfies the most rules will be selected as the result but its reasoning will not be explained.
 
 Example:
 ```
@@ -78,6 +80,8 @@ adult:
 if (color eq red) and (age gt 18) and (isAlive eq true) then isAdult
 ;
 ```
+
+a full example can be found in the `demo.ess` file.
 
 ## Compiling 
 EScript interpreter is written in Python and compiled to C for speed. To compile use nuitka:
