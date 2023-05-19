@@ -1,17 +1,28 @@
-cpt first_sym bool
-cpt second_sym bool
-cpt third_sym bool
+cpt fever bool
+cpt cough bool
+cpt fatigue bool
+cpt body_ache bool
+cpt headache bool
+cpt runny_nose bool
+cpt sore_throat bool
+cpt difficulty_breathing bool
 
 
-headache:
-if first_sym eq true then first_dis
-if (first_sym eq true) and (second_sym eq true) then first_no
+influenza:
+if (cough eq true) and (fatigue eq true) and (difficulty_breathing eq true) then hasShortnessOfBreath
+if (body_ache eq true) and (hasShortnessOfBreath eq true) then hasChestPain
+if (fever eq true) (hasChestPain eq true) and (hasShortnessOfBreath eq true) and (runny_nose eq false) then influenza
 ;
 
-block2:
-if second_sym eq true then second_dis
+covid:
+if (cough eq true) and (fatigue eq true) and (difficulty_breathing eq true) then hasShortnessOfBreath
+if (body_ache eq true) and (hasShortnessOfBreath eq true) then hasChestPain
+if (headache eq true) and (fatigue eq true) and (runny_nose eq true) then hasLossOfSmell
+if (fever eq true) and (hasChestPain eq true) and (hasShortnessOfBreath eq true) and (hasLossOfSmell eq true) then covid
 ;
 
-block3:
-if third_sym eq true then third_dis
+common_cold:
+if (headache eq true) and (fatigue eq true) and (runny_nose eq true) then hasLossOfSmell
+if (fever eq false) and (body_ache eq false) then NoFever
+if (hasLossOfSmell eq true) and (NoFever eq true) then common_cold
 ;

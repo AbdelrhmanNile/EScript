@@ -53,14 +53,17 @@ class Rule:
     def __init__(self, condition, action):
         self.condition = condition
         self.action = action
-        
         self.cpts = []
         self.rule_cpts()
         
     def rule_cpts(self):
         for token in self.condition:
             if check_token(token) == None:
-                self.cpts.append(token)
+                if ((")" in token) or ("(" in token)) and not (("true" in token) or("false" in token)):
+                    self.cpts.append(str(token).strip("()"))
+                elif ("true" not in token) and ("false" not in token):
+                    self.cpts.append(token)
+
 
     def __str__(self):
         return f"Rule({self.condition}, {self.action})"
@@ -88,9 +91,13 @@ class Block:
             
     def eval(self):
         for rule in self.rules:
-            cpt, res = eval_rule(rule)
+            cpt, res = eval_rule(rule, self.local_runtime)
             self.define_local_result(cpt, res)
             self.define_local_runtime_cpt(cpt, res)
+        
+        self.check_all_satisfied()
+        
+        
     
     def define_local_result(self, cpt, val):
         self.local_results[cpt] = val
@@ -110,7 +117,25 @@ class Block:
         return self.all_satisfied
         
     def explain(self):
-        pass
+        print("##########")
+        print("Result")
+        print("##########")
+        print(f"{self.name} is True")
+        print("####")
+        print("Why you ask?")
+        print("####")
+        print("Because:")
+        for rule in reversed(self.rules):
+            print(f"{rule.action[0]} is {self.local_results[rule.action[0]]}")
+            print("\tbecause:")
+            for cpt in rule.cpts:
+                cpt_c = str(cpt).replace("(", "").replace(")", "")
+                try:
+                    print(f"\t\t{cpt_c} is {self.local_results[cpt_c]}")
+                except KeyError:
+                    print(f"\t\t{cpt_c} is {RUNTIME_CPTS[cpt_c]}")
+                    print()
+        sys.exit()
         
         
         
@@ -172,7 +197,7 @@ def parse_rule(line):
     return Rule(if_clause, then_clause)
 
 
-def eval_rule(rule: Rule):
+def eval_rule(rule: Rule, local_runtime=None):
     if_clause = rule.condition
     then_clause = rule.action
     buffer = []
@@ -190,7 +215,7 @@ def eval_rule(rule: Rule):
                 cur_token = if_clause[i]
             cur_token = if_clause[i].replace(")", "")
             buffer.append(cur_token)
-            rule_stack.append(eval_operation(buffer))
+            rule_stack.append(eval_operation(buffer, local_runtime))
             buffer.clear()
             if i + 1 < len(if_clause):
                 i += 1
@@ -206,10 +231,10 @@ def eval_rule(rule: Rule):
         i += 1
         continue
     if len(buffer) > 0:
-        rule_stack.append(eval_operation(buffer))
+        rule_stack.append(eval_operation(buffer, local_runtime))
 
     if len(rule_stack) > 1:
-        final_result = eval_operation(rule_stack)
+        final_result = eval_operation(rule_stack, local_runtime)
         rule_stack.clear()
         rule_stack.append(final_result)
 
@@ -219,7 +244,7 @@ def eval_rule(rule: Rule):
     return then_clause[0], rule_stack[0]
 
 
-def eval_operation(operation):
+def eval_operation(operation, local_runtime):
     if len(operation) == 3:
         lhs, op, rhs = operation
     elif len(operation) > 3:
@@ -227,8 +252,11 @@ def eval_operation(operation):
     try:
         lhs = RUNTIME_CPTS[lhs] if lhs != True and lhs != False else lhs
     except KeyError:
-        print(f"ERROR: {lhs} is not a defined concept")
-        sys.exit()
+        try:
+            lhs = local_runtime[lhs] if lhs != True and lhs != False else lhs
+        except KeyError:
+            print(f"ERROR: {lhs} is not a defined concept")
+            sys.exit()
     rhs = True if rhs == "true" else rhs
     rhs = False if rhs == "false" else rhs
 
@@ -296,18 +324,29 @@ def syntax_error(line):
     sys.exit()
 
 
-def eval_blocks():
-    # rank blocks based on number of true conditions, use block.true_n
-    ranked_blocks = []
+def eval_blocks():    
     for block in BLOCKS:
-        ranked_blocks.append(block.true_n)
-        
-    highest_trues = max(*ranked_blocks)
-    index_of_hghest = ranked_blocks.index(highest_trues)
-    highest_block = BLOCKS[index_of_hghest]
+        block.eval()
     
-    print(f"Result: {highest_block.name}")
+    winner_block = None
+    for block in BLOCKS:
+        if block.all_satisfied:
+            winner_block = block
+            block.explain()
+    
+    
+    if winner_block is None:
+        # rank blocks based on number of true conditions, use block.true_n
+        ranked_blocks = []
+        for block in BLOCKS:
+            ranked_blocks.append(block.true_n)
         
+        highest_trues = max(*ranked_blocks)
+        index_of_hghest = ranked_blocks.index(highest_trues)
+        highest_block = BLOCKS[index_of_hghest]
+        print(f"Most likely: {highest_block.name}")
+    
+    
 
 if __name__ == "__main__":
     block_op = False
@@ -355,6 +394,4 @@ if __name__ == "__main__":
 
     user_input()
     
-    for block in BLOCKS:
-        block.check_all_satisfied()
     eval_blocks()
