@@ -1,0 +1,17 @@
+cpt first_sym bool
+cpt second_sym bool
+cpt third_sym bool
+
+
+headache:
+if first_sym eq true then first_dis
+if (first_sym eq true) and (second_sym eq true) then first_no
+;
+
+block2:
+if second_sym eq true then second_dis
+;
+
+block3:
+if third_sym eq true then third_dis
+;
